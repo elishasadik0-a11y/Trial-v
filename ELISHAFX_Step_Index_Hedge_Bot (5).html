@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ELISHAFX | Guided Step Index Rise/Fall Bot</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1020;--panel:#121a2d;--line:#26334d;--muted:#9aabc6;--text:#edf3ff;--green:#43d9a3;--red:#ff6b7a;--blue:#7aa7ff}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#080d19,#101a30);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--text)}
+main{max-width:1100px;margin:auto;padding:20px}.hero{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:18px}.brand{font-weight:900;letter-spacing:.12em;font-size:25px}.sub{color:var(--muted);font-size:13px}.pill{border:1px solid var(--line);padding:7px 11px;border-radius:999px;color:var(--muted);font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}.card{background:rgba(18,26,45,.95);border:1px solid var(--line);border-radius:16px;padding:17px;min-width:0}.setup{grid-column:span 5}.stats{grid-column:span 7}.legs{grid-column:span 12}.logcard{grid-column:span 12}h2{font-size:16px;margin:0 0 14px}label{display:block;color:var(--muted);font-size:12px;margin:10px 0 5px}input,select{width:100%;padding:11px 12px;background:#0b1222;border:1px solid #30405e;color:var(--text);border-radius:9px;font:inherit}input:focus,select:focus{outline:1px solid var(--blue)}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.buttons{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}button{border:0;border-radius:10px;padding:11px 14px;font-weight:750;cursor:pointer;background:#30405e;color:white}button:disabled{opacity:.4;cursor:not-allowed}.primary{background:var(--blue);color:#081020}.buy{background:var(--green);color:#071a14}.stop{background:#512637;color:#fff}.metricgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.metric{background:#0b1222;border:1px solid var(--line);padding:13px;border-radius:12px}.metric span{display:block;color:var(--muted);font-size:12px}.metric strong{display:block;font-size:20px;margin-top:5px;overflow-wrap:anywhere}.good{color:var(--green)}.bad{color:var(--red)}.leggrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.leg{padding:14px;border-radius:12px;border:1px solid var(--line);background:#0b1222}.leg h3{margin:0 0 8px}.rise{color:var(--green)}.fall{color:var(--red)}.detail{font-size:13px;color:var(--muted);display:grid;gap:5px}.log{height:180px;overflow:auto;background:#070c17;border-radius:10px;padding:10px;font:12px/1.6 ui-monospace,monospace;white-space:pre-wrap;color:#c7d5ee}.warning{border-left:3px solid #e8b45b;padding:10px 12px;background:#241f17;color:#f2d6a2;border-radius:7px;font-size:12px;margin-top:12px}.status{color:var(--muted);font-size:13px}.small{font-size:12px;color:var(--muted)}@media(max-width:760px){.setup,.stats{grid-column:span 12}.metricgrid{grid-template-columns:1fr 1fr}.metric:last-child{grid-column:span 2}.leggrid{grid-template-columns:1fr}main{padding:12px}}
+</style>
+</head>
+<body><main>
+<header class="hero"><div><div class="brand">ELISHAFX</div><div class="sub">STEP INDEX · RISE / FALL · GUIDED DEMO TEST VERSION</div></div><div class="pill" id="connectionPill">DISCONNECTED</div></header>
+<section class="card" style="margin-bottom:14px"><h2>Start here — simple setup guide</h2>
+<ol style="padding-left:22px;margin:0;display:grid;gap:7px"><li>Open this HTML file in Chrome while you have internet.</li><li>On Deriv, create an API token with <b>Read</b> and <b>Trade</b> permissions. Use a <b>demo account token only</b>.</li><li>Paste the token below, choose Connect, and wait for “DEMO ACCOUNT VERIFIED”.</li><li>Confirm Step Index 100 is selected, duration is 2 ticks, and stake is 0.35.</li><li>Press <b>BUY BOTH</b> only when ready. Check the activity log and contract cards afterward.</li></ol>
+<p class="small" style="margin-bottom:0">This version is demo-only: it will not enable buying unless Deriv identifies the authorized login as a demo account. Never share your API token with anyone.</p></section>
+<div class="grid">
+<section class="card setup"><h2>Connection & trade setup</h2>
+<label>Deriv API token (demo account only)</label><div class="row"><input id="token" type="password" autocomplete="off" placeholder="Paste demo token with read + trade permissions"><button type="button" id="showTokenBtn">Show</button></div>
+<div class="row"><div><label>Market</label><select id="symbol"><option value="">Connect to load Step Index symbols</option></select></div><div><label>Currency</label><input id="currency" value="USD" maxlength="10"></div></div>
+<div class="row"><div><label>Stake per contract (account currency)</label><input id="stake" type="number" min="0.35" step="0.01" value="0.35"></div><div><label>Duration (even ticks only)</label><input id="duration" type="number" min="2" step="2" value="2"></div></div>
+<div class="row"><div><label>Duration unit</label><select id="unit"><option value="t">Ticks</option><option value="s">Seconds</option><option value="m">Minutes</option></select></div><div><label>Daily loss stop (account currency)</label><input id="lossLimit" type="number" min="0" step="0.01" value="5"></div></div>
+<div class="buttons"><button class="primary" id="connectBtn">Connect</button><button id="disconnectBtn" disabled>Disconnect</button><button class="buy" id="buyBtn" disabled>BUY BOTH</button><button class="stop" id="stopBtn" disabled>Stop new trades</button></div>
+<div class="warning">Risk warning: Rise and Fall are separate contracts with separate costs. Buying both does not guarantee a hedge or profit. The two purchases are not atomic; one can succeed while the other fails. The daily stop is a browser-side guard, not a guaranteed broker-enforced limit.</div>
+</section>
+<section class="card stats"><h2>Account & session</h2><div class="metricgrid">
+<div class="metric"><span>Balance</span><strong id="balance">—</strong></div><div class="metric"><span>Session realized P/L*</span><strong id="sessionPL">$0.00</strong></div><div class="metric"><span>Active contracts</span><strong id="activeCount">0</strong></div>
+<div class="metric"><span>Pair status</span><strong id="pairStatus">Idle</strong></div><div class="metric"><span>Spent on open buys</span><strong id="spent">$0.00</strong></div><div class="metric"><span>New entries</span><strong id="entries">Enabled</strong></div></div><p class="small">*Session P/L is the sum of final contract profits observed by this page; it resets when the page is reloaded. Keep your own records.</p><p class="status" id="status">Connect using a demo API token to begin.</p></section>
+<section class="card legs"><h2>Contract monitor</h2><div class="leggrid">
+<div class="leg"><h3 class="rise">RISE · CALL</h3><div class="detail"><div>Contract ID: <b id="riseId">—</b></div><div>Status: <b id="riseStatus">Waiting</b></div><div>Buy price: <b id="riseBuy">—</b></div><div>Current payout: <b id="risePayout">—</b></div><div>Profit / loss: <b id="risePL">—</b></div></div></div>
+<div class="leg"><h3 class="fall">FALL · PUT</h3><div class="detail"><div>Contract ID: <b id="fallId">—</b></div><div>Status: <b id="fallStatus">Waiting</b></div><div>Buy price: <b id="fallBuy">—</b></div><div>Current payout: <b id="fallPayout">—</b></div><div>Profit / loss: <b id="fallPL">—</b></div></div></div>
+</div></section>
+<section class="card logcard"><h2>Activity log</h2><div id="log" class="log">Ready. No trades have been placed.</div></section>
+</div></main>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const APP_ID = '1089';
+let ws=null, req=0, pending=new Map(), connected=false, authorized=false, entriesEnabled=true, buying=false;
+let balanceSub=null, sessionPL=0, spent=0, contracts=new Map(), subscriptions=new Map(), pairSeq=0;
+const money=(n,curr='USD')=>Number.isFinite(Number(n))?`${curr} ${Number(n).toFixed(2)}`:'—';
+function log(msg){const el=$('log');const t=new Date().toLocaleTimeString();el.textContent=`[${t}] ${msg}\n`+el.textContent;}
+function status(s){$('status').textContent=s}
+function pill(s){$('connectionPill').textContent=s; $('connectionPill').style.color=connected?'var(--green)':'var(--muted)'}
+function send(data){if(!ws||ws.readyState!==WebSocket.OPEN)throw new Error('WebSocket is not connected');const id=++req;data.req_id=id;ws.send(JSON.stringify(data));return id}
+function ask(data,timeout=12000){return new Promise((resolve,reject)=>{let id;try{id=send(data)}catch(e){reject(e);return}const timer=setTimeout(()=>{pending.delete(id);reject(new Error('Request timed out: '+Object.keys(data)[0]))},timeout);pending.set(id,{resolve,reject,timer})})}
+function handle(msg){
+ if(msg.req_id && pending.has(msg.req_id)){const p=pending.get(msg.req_id);clearTimeout(p.timer);pending.delete(msg.req_id);if(msg.error)p.reject(new Error(msg.error.message||'Deriv API error'));else p.resolve(msg)}
+ if(msg.error){log('API error: '+msg.error.message);return}
+ if(msg.msg_type==='authorize'){const loginid=String(msg.authorize.loginid||'');if(!/^VRTC/i.test(loginid)){authorized=false;connected=true;pill('REAL ACCOUNT BLOCKED');$('disconnectBtn').disabled=false;status('Safety block: this version only enables trading on a demo account. Disconnect and connect with a demo API token.');log('Safety block: authorized login does not look like a demo account ('+loginid+'). Buying remains disabled.');return}authorized=true;connected=true;pill('DEMO ACCOUNT VERIFIED');$('disconnectBtn').disabled=false;status('Demo account verified. Loading available Step Index symbols…');log('Demo account authorized: '+loginid);ask({balance:1,subscribe:1}).then(r=>{updateBalance(r.balance);if(r.subscription)balanceSub=r.subscription.id}).catch(e=>log(e.message));ask({active_symbols:'brief',product_type:'basic'}).then(r=>loadSymbols(r.active_symbols||[])).catch(e=>log('Could not load symbols: '+e.message));}
+ if(msg.msg_type==='balance'&&msg.balance)updateBalance(msg.balance);
+ if(msg.msg_type==='proposal_open_contract'&&msg.proposal_open_contract)updateContract(msg.proposal_open_contract);
+}
+function updateBalance(b){$('balance').textContent=money(b.balance,b.currency||$('currency').value);$('currency').value=b.currency||$('currency').value}
+function loadSymbols(list){
+ const sel=$('symbol');sel.innerHTML='';const matches=list.filter(x=>/step index/i.test(x.display_name||'')||/step index/i.test(x.submarket_display_name||''));
+ matches.sort((a,b)=>(a.display_name||'').localeCompare(b.display_name||''));
+ if(!matches.length){sel.innerHTML='<option value="">No Step Index symbol returned by API</option>';log('No Step Index market was found in active_symbols for this account.');return}
+ for(const x of matches){const o=document.createElement('option');o.value=x.symbol;o.textContent=`${x.display_name} (${x.symbol})`;sel.appendChild(o)}
+ const preferred=matches.find(x=>/step index 100/i.test(x.display_name||''));if(preferred)sel.value=preferred.symbol;
+ $('buyBtn').disabled=!authorized||!entriesEnabled;$('stopBtn').disabled=false;
+ log('Loaded '+matches.length+' Step Index market(s). Selected Step Index 100 when available; verify the market before trading.');status('Demo ready. Check duration, stake and loss limit before buying.');
+}
+function updateContract(c){
+ const id=String(c.contract_id||'');const item=contracts.get(id);if(!item)return;
+ item.status=c.status||item.status;item.profit=Number(c.profit||0);item.payout=c.payout;item.buyPrice=c.buy_price;item.isSold=!!c.is_sold;
+ const prefix=item.side==='CALL'?'rise':'fall';
+ $(prefix+'Status').textContent=item.isSold?(c.status||'closed'):(c.status||'open');
+ $(prefix+'PL').textContent=money(item.profit,item.currency);$(prefix+'PL').className=item.profit>=0?'good':'bad';
+ $(prefix+'Payout').textContent=money(c.payout,item.currency);$(prefix+'Buy').textContent=money(c.buy_price,item.currency);
+ $('activeCount').textContent=[...contracts.values()].filter(x=>!x.isSold).length;
+ if(item.isSold&&!item.counted){item.counted=true;sessionPL+=item.profit;$('sessionPL').textContent=money(sessionPL,item.currency);log(`${item.side} contract ${id} closed: P/L ${money(item.profit,item.currency)}`)}
+ const pair=contracts.get(id)?.pair;
+ if(pair){const legs=[...contracts.values()].filter(x=>x.pair===pair);if(legs.length===2&&legs.every(x=>x.isSold)){$('pairStatus').textContent='Pair closed';log(`Pair ${pair} final combined P/L: ${money(legs.reduce((s,x)=>s+x.profit,0),item.currency)}`)}}
+}
+function subscribeContract(buy,side,pair){
+ const id=String(buy.contract_id);const item={id,side,pair,status:'open',profit:0,payout:null,buyPrice:buy.buy_price,currency:buy.currency||$('currency').value,isSold:false,counted:false};
+ contracts.set(id,item);$(''+(side==='CALL'?'rise':'fall')+'Id').textContent=id;$(''+(side==='CALL'?'rise':'fall')+'Status').textContent='Open';$(''+(side==='CALL'?'rise':'fall')+'Buy').textContent=money(buy.buy_price,item.currency);
+ send({proposal_open_contract:1,contract_id:Number(id),subscribe:1});
+}
+async function buyBoth(){
+ if(!authorized||!connected){status('Connect and authorize first.');return}
+ if(!entriesEnabled){status('New entries are stopped. Press Stop new trades only stops future entries; reconnect/reload to reset this local guard.');return}
+ if(buying)return;
+ const symbol=$('symbol').value, stake=Number($('stake').value), duration=Number($('duration').value), unit=$('unit').value, limit=Number($('lossLimit').value);
+ if(!symbol){alert('Select a Step Index market first.');return}
+ if(!Number.isFinite(stake)||stake<0.35||!Number.isFinite(duration)||duration<2||!Number.isInteger(duration)||duration%2!==0){alert('Stake must be at least 0.35 and duration must be a positive even whole number (2, 4, 6, 8, …).');return}
+ if(sessionPL<=-Math.abs(limit)&&limit>0){entriesEnabled=false;$('entries').textContent='Stopped';$('buyBtn').disabled=true;status('Daily/session loss stop reached.');log('Risk stop activated: session P/L reached loss limit.');return}
+ buying=true;$('buyBtn').disabled=true;$('pairStatus').textContent='Requesting quotes';const pair=++pairSeq;status('Requesting Rise and Fall quotes…');
+ try{
+  const common={proposal:1,amount:stake,basis:'stake',currency:$('currency').value.trim().toUpperCase(),duration,duration_unit:unit,underlying_symbol:symbol};
+  const [rise,fall]=await Promise.all([
+   ask({...common,contract_type:'CALL'}),
+   ask({...common,contract_type:'PUT'})
+  ]);
+  if(!rise.proposal||!fall.proposal)throw new Error('One or both proposals were not returned.');
+  const r=rise.proposal,f=fall.proposal;
+  log(`Quotes received. Rise cost ${money(r.ask_price,common.currency)}; Fall cost ${money(f.ask_price,common.currency)}.`);
+  $('pairStatus').textContent='Buying both';status('Quotes received. Sending both purchase requests…');
+  // Send both requests back-to-back; execution is not atomic.
+  const outcomes=await Promise.allSettled([
+   ask({buy:r.id,price:Number(r.ask_price)}),
+   ask({buy:f.id,price:Number(f.ask_price)})
+  ]);
+  let success=0;
+  for(let i=0;i<2;i++){
+   const side=i===0?'CALL':'PUT',out=outcomes[i];
+   if(out.status==='fulfilled'&&out.value.buy){
+    success++;const b=out.value.buy;spent+=Number(b.buy_price||0);$('spent').textContent=money(spent,common.currency);subscribeContract(b,side,pair);log(`${side} purchased: contract ${b.contract_id}, cost ${money(b.buy_price,common.currency)}.`);
+   }else{log(`${side} purchase FAILED: ${out.reason?.message||'No buy response'}`)}
+  }
+  if(success===2){$('pairStatus').textContent='Both purchased';status('Both contracts purchased and monitoring is active.');}
+  else if(success===1){$('pairStatus').textContent='PARTIAL FILL';status('WARNING: only one leg purchased. Do not assume this is hedged; inspect the open contract immediately.');log('PARTIAL FILL WARNING: one contract bought and the other failed. No automatic retry was sent to avoid duplicate exposure.');}
+  else{$('pairStatus').textContent='Failed';status('Neither contract was confirmed as purchased. Check activity log and account portfolio.');}
+ }catch(e){log('Trade attempt error: '+e.message);status('Trade attempt failed: '+e.message);$('pairStatus').textContent='Error'}
+ finally{buying=false;$('buyBtn').disabled=!authorized||!entriesEnabled}
+}
+function connect(){
+ const token=$('token').value.trim();if(!token){alert('Paste your Deriv API token. Use a demo token with read and trade permissions.');return}
+ if(ws)try{ws.close()}catch{}
+ connected=false;authorized=false;pill('CONNECTING…');status('Opening secure WebSocket…');log('Connecting to Deriv API…');$('connectBtn').disabled=true;
+ ws=new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
+ ws.onopen=()=>{connected=true;pill('CONNECTED · AUTHORIZING');ask({authorize:token}).catch(e=>{status('Authorization failed: '+e.message);log('Authorization failed. Check token permissions and account.');pill('AUTH FAILED');$('connectBtn').disabled=false})};
+ ws.onmessage=e=>{try{handle(JSON.parse(e.data))}catch(err){log('Message handling error: '+err.message)}};
+ ws.onerror=()=>{status('WebSocket handshake failed before authorization. Check internet/VPN, try Chrome, and ensure Deriv is reachable. This is not yet evidence that your token is wrong.');log('WebSocket error before authorization. Try switching Wi-Fi/mobile data, disabling VPN/ad-blocking, or opening the file in Chrome.');$('connectBtn').disabled=false};
+ ws.onclose=ev=>{connected=false;authorized=false;pill('DISCONNECTED');$('connectBtn').disabled=false;$('disconnectBtn').disabled=true;$('buyBtn').disabled=true;status('Disconnected. Existing contracts may still be active on Deriv; check your account before reconnecting.');log('Connection closed (code '+(ev.code||'unknown')+(ev.reason? ', reason: '+ev.reason:'')+'). No automatic reconnect or automatic re-buy.');};
+}
+function disconnect(){if(ws){ws.onclose=null;ws.close();ws=null}connected=false;authorized=false;pill('DISCONNECTED');$('disconnectBtn').disabled=true;$('buyBtn').disabled=true;status('Disconnected. Check open contracts in your Deriv account.');log('Disconnected by user.')}
+$('connectBtn').addEventListener('click',connect);$('disconnectBtn').addEventListener('click',disconnect);$('buyBtn').addEventListener('click',buyBoth);$('showTokenBtn').addEventListener('click',()=>{const t=$('token');const showing=t.type==='password';t.type=showing?'text':'password';$('showTokenBtn').textContent=showing?'Hide':'Show'});
+$('stopBtn').addEventListener('click',()=>{entriesEnabled=false;$('entries').textContent='Stopped';$('buyBtn').disabled=true;status('New entries stopped. Existing contracts will continue to be monitored while connected.');log('Stop new trades enabled. Existing positions are not automatically closed.');});
+})();
+</script></body></html>
